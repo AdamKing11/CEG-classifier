@@ -6,7 +6,10 @@ from random import shuffle
 from keras.models import Sequential
 from keras.layers import Dense
 from keras.layers import LSTM
+from keras.layers import Dropout
 from keras.layers import Bidirectional
+from keras.layers import Convolution1D
+from keras.layers import MaxPooling1D
 from keras.layers.embeddings import Embedding
 from keras.preprocessing import sequence
 
@@ -64,6 +67,7 @@ def format_data(data, split = .75, shuf = False):
 	y_train = y_vec[:split_index]
 	y_test = y_vec[split_index:]
 
+	# just to see what a piece of data looks like
 	print(data[3])
 	print(X[3], Y[3])
 	print(x_vec[3], y_vec[3])
@@ -71,19 +75,29 @@ def format_data(data, split = .75, shuf = False):
 	return (x_train, y_train), (x_test, y_test), (max_x_len, max_y_len)
 
 
+
+# gotta beat 74%
+
+
 data = load_CEG("CEG.NOUNS.txt")
 (x_tr, y_tr), (x_te, y_te), (x_longest, y_longest) = format_data(data, shuf = True)
 
 embed_len = 32
 num_words = x_tr.shape[0]
-print(x_tr.shape, y_tr.shape)
-print(x_te.shape, y_te.shape)
-print(x_tr[0], y_tr[0])
+#print(x_tr.shape, y_tr.shape)
+#print(x_te.shape, y_te.shape)
+#print(x_tr[0], y_tr[0])
 
 
 model = Sequential()
 model.add(Embedding(num_words, embed_len, input_length=x_longest))
-model.add(Bidirectional(LSTM(32)))
+
+model.add(Convolution1D(nb_filter=32, filter_length=3, border_mode='same', activation='relu'))
+model.add(MaxPooling1D(pool_length=2))
+
+
+model.add(Bidirectional(LSTM(32))) # unroll to make faster?
+#model.add(Dense(8))
 model.add(Dropout(0.2))
 model.add(Dense(y_longest, activation='sigmoid'))
 model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
