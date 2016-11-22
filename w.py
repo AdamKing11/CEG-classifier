@@ -89,17 +89,28 @@ num_words = x_tr.shape[0]
 #print(x_tr[0], y_tr[0])
 
 
+print("Starting model...")
 model = Sequential()
+
+print("Embedding...")
 model.add(Embedding(num_words, embed_len, input_length=x_longest))
 
-model.add(Convolution1D(nb_filter=32, filter_length=3, border_mode='same', activation='relu'))
+print("Convolution and...", end = "")
+model.add(Convolution1D(nb_filter=16, filter_length=2, border_mode='same', activation='relu'))
+print("Pooling.")
 model.add(MaxPooling1D(pool_length=2))
 
+print("A pinch of dropout...")
+model.add(Dropout(0.4))
 
-model.add(Bidirectional(LSTM(32))) # unroll to make faster?
+print("LSTM (goes both ways ;) )")
+model.add(Bidirectional(LSTM(64))) # unroll to make faster?
 #model.add(Dense(8))
-model.add(Dropout(0.2))
+model.add(Dropout(0.4))
+print("Final layer, Dense")
 model.add(Dense(y_longest, activation='sigmoid'))
+
+print("Now, to compile!")
 model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
 #print(model.summary())
