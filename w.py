@@ -94,14 +94,14 @@ def build_model_1(num_words):
 	# embedding
 	model.add(Embedding(num_words, embed_len, input_length=x_longest))
 	# convolution/maxpool
-	model.add(Convolution1D(nb_filter=convo_filters, filter_length=filt_len, border_mode='same', activation='relu'))
-	model.add(MaxPooling1D(pool_length=pool_len))
+	#model.add(Convolution1D(nb_filter=convo_filters, filter_length=filt_len, border_mode='same', activation='relu'))
+	#model.add(MaxPooling1D(pool_length=pool_len))
 	# dropout and LSTM
 	model.add(Dropout(0.25))
 	model.add(Bidirectional(LSTM(lstm_size))) # unroll to make faster?
 	model.add(Dropout(0.25))
 	# final layer
-	model.add(Dense(y_longest, activation='sigmoid'))
+	model.add(Dense(y_longest, activation='softmax'))
 	model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
 	return model

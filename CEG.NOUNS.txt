@@ -3910,7 +3910,7 @@ hawl	nf
 siawns	nf
 gweddill	nm
 te	nm
-tü	nm
+tÃ¼	nm
 tref	nf
 tywydd	nm
 dydd	nm
@@ -3946,7 +3946,7 @@ braw	nm
 tymer	nf
 rhaid	nm
 bwyd	nm
-tü	nm
+tÃ¼	nm
 glanweithdra	nm
 o+l	nm
 tro	nm
@@ -95066,7 +95066,7 @@ diolch	nm
 ystyriaeth	nf
 cynnig	nm
 da	nm
-tü	nm
+tÃ¼	nm
 fferm	nf
 cynnig	nm
 cynnig	nm
@@ -95079,7 +95079,7 @@ gweddill	nm
 oes	nf
 sicrwydd	nm
 mam	nf
-tü	nm
+tÃ¼	nm
 lle	nm
 bywyd	nm
 dewis	nm
@@ -95087,8 +95087,8 @@ gwybod	nm
 cysur	nm
 cynnig	nm
 tenant	nm
-tü	nm
-tü	nm
+tÃ¼	nm
+tÃ¼	nm
 haf	nm
 hanner	nm
 mynydd	nm
@@ -95376,7 +95376,7 @@ diolch	nm
 ystyriaeth	nf
 cynnig	nm
 da	nm
-tü	nm
+tÃ¼	nm
 fferm	nf
 cynnig	nm
 cynnig	nm
@@ -95389,7 +95389,7 @@ gweddill	nm
 oes	nf
 sicrwydd	nm
 mam	nf
-tü	nm
+tÃ¼	nm
 lle	nm
 bywyd	nm
 dewis	nm
@@ -95397,8 +95397,8 @@ gwybod	nm
 cysur	nm
 cynnig	nm
 tenant	nm
-tü	nm
-tü	nm
+tÃ¼	nm
+tÃ¼	nm
 haf	nm
 hanner	nm
 mynydd	nm
@@ -97692,7 +97692,7 @@ pen	nm
 bore	nm
 drws	nm
 car	nm
-tü	nm
+tÃ¼	nm
 doctor	nm
 sw+n	nm
 llofft	nf
@@ -143399,7 +143399,7 @@ bwtler	nm
 bwrdd	nm
 gwialen	nf
 llywydd	nm
-tü	nm
+tÃ¼	nm
 syr	nm
 bonesig	nf
 personoliaeth	nf
@@ -145209,7 +145209,7 @@ au	nm
 llawer	nm
 adnod	nf
 synagog	nm
-tü	nm
+tÃ¼	nm
 adnod	nf
 twymyn	nf
 adnod	nf
@@ -145279,7 +145279,7 @@ adnod	nf
 claf	nm
 tyrfa	nf
 to	nm
-tü	nm
+tÃ¼	nm
 lle	nm
 matras	nf
 claf	nm
@@ -145323,7 +145323,7 @@ tollfa	nf
 adnod	nf
 pryd	nm
 bwyd	nm
-tü	nm
+tÃ¼	nm
 llawer	nm
 llawer	nm
 adnod	nf
@@ -145358,7 +145358,7 @@ gwin	nm
 saboth	nm
 adnod	nf
 saboth	nm
-üd	nm
+Ã¼d	nm
 adnod	nf
 peth	nm
 cyfraith	nf
@@ -145368,7 +145368,7 @@ angen	nm
 eisiau	nm
 bwyd	nm
 adnod	nf
-tü	nm
+tÃ¼	nm
 duw	nm
 archoffeiriad	nm
 neb	nm
@@ -172795,7 +172795,7 @@ tu	nm
 garej	nf
 rhech	nf
 tu	nm
-tü	nm
+tÃ¼	nm
 gwydr	nm
 coed	nm
 tu	nm
@@ -172947,7 +172947,7 @@ cromiwm	nm
 llwch	nm
 llwybr	nm
 ochr	nf
-tü	nm
+tÃ¼	nm
 gwydr	nm
 bwtler	nm
 drws	nm
