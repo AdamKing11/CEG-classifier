@@ -13,7 +13,6 @@ def load_ceg_nouns(f = 'LemmaCountsAnalysis.txt'):
 
 	d = {}
 	with open(f) as rf:
-		
 		reader = csv.reader(rf, delimiter = '\t')
 		# 0 -> lemma, 1 -> lemma freq, 3 -> lemma POS, 7 -> gender (for nouns)
 		# 8 -> token, 9 -> token count 10 -> token freq
@@ -27,10 +26,30 @@ def load_ceg_nouns(f = 'LemmaCountsAnalysis.txt'):
 			if token_gender not in ('nm', 'nf'):	continue
 			d[token] = token_gender
 			
-			#if len(d) > 10:	break
 	return d
 
-class CEG_noun_data(object):
+def train_and_test_model(model, Xs, ys, test_Xs, test_ys, labels = ('nf', 'nm'), nb_cycles = 5, epochs_per_display = 10):
+	from sklearn.metrics import classification_report, accuracy_score
+	completed_epochs = 0
+	for i in range(nb_cycles):
+		print(i)
+		for _ in tqdm(range(epochs_per_display)):
+			completed_epochs += 1
+			model.fit(Xs, ys, batch_size = 128, epochs = 1, verbose = 0)
+		print('scoring....')
+		y_hat = np.argmax(model.predict(test_Xs, verbose = 0), axis=1)
+		y_hat_train = np.argmax(model.predict(Xs, verbose = 0), axis=1)
+		
+		print(y_hat.shape, y_hat_train.shape)
+		print('*' * 40)
+		
+		print('\n', classification_report(np.argmax(test_ys, axis=1), y_hat, target_names = labels))
+		print('test acc:\t', accuracy_score(np.argmax(test_ys, axis=1), y_hat))
+		print('*' * 20)
+		print('train acc:\t', accuracy_score(np.argmax(ys, axis=1), y_hat_train))
+		print('*' * 80)
+
+class CEG_nouns(object):
 
 	def __init__(self, d, w2v, test_split = .8, embed_len = 300):
 		chars = set()
@@ -59,7 +78,7 @@ class CEG_noun_data(object):
 		
 		# arrays for word embeddings
 		self.X['train_vecs'] = np.zeros((train_split, embed_len), dtype = 'float32')
-		self.X['test_vecs'] = np.zeros((train_split, embed_len), dtype = 'float32')
+		self.X['test_vecs'] = np.zeros((test_split, embed_len), dtype = 'float32')
 			
 		# arrays for labels
 		self.y['train'] = np.zeros((train_split, len(labels)), dtype = 'uint8')
@@ -91,12 +110,12 @@ class CEG_noun_data(object):
 			self.y['test'][i, self.l2i[label]] = 1
 ############
 
-def build_phono_model(wordlen, nb_chars, nb_labels):
-	from keras.models import Sequential, Model
-	from keras.layers import Dense, Input, Masking, Dropout
-	from keras.layers import LSTM, Embedding, Bidirectional
+def build_phono_model(word_len, nb_chars, nb_labels):
+	from keras.models import Model
+	from keras.layers import Dense, Input, Dropout
+	from keras.layers import LSTM, Embedding, Masking, Bidirectional
 	
-	char_input = Input((wordlen,))
+	char_input = Input((word_len,))
 	masking_layer = Masking(mask_value = 0.)(char_input)
 	char_embed_layer = Embedding(nb_chars, 32)(masking_layer)
 	#char_rnn = Bidirectional(LSTM(64, dropout = .5))(char_embed_layer)
@@ -110,73 +129,63 @@ def build_phono_model(wordlen, nb_chars, nb_labels):
 	return model
 
 
-
 def build_embed_model(embed_len, nb_labels):
-	from keras.models import Sequential, Model
-	from keras.layers import Dense, Input, Masking, Dropout
-	from keras.layers import LSTM, Embedding
+	from keras.models import Model
+	from keras.layers import Dense, Input, Dropout
 
-	embed_input = Input((embded_len,))
+	embed_input = Input((embed_len,))
 	embed_hidden_layer = Dense(128, activation = 'relu')(embed_input)
 	embed_dropout = Dropout(.25)(embed_hidden_layer)
 	final_output = Dense(nb_labels, activation = 'softmax')(embed_dropout)
 	
 	model = Model(embed_input, final_output)
 	model.compile(loss='categorical_crossentropy', 
-		optimizer='adam')
+		optimizer='rmsprop')
 	return model
 
+
+def build_ensemble_model(embed_len, word_len, nb_chars, nb_labels):
+	from keras.models import Model
+	from keras.layers import Dense, Input, Dropout, Concatenate
+	from keras.layers import LSTM, Embedding, Masking, Bidirectional
+
+	# do the RNN branch of the NN....
+	char_input = Input((word_len,))
+	masking_layer = Masking(mask_value = 0.)(char_input)
+	char_embed_layer = Embedding(nb_chars, 32)(masking_layer)
+	char_rnn = LSTM(64, dropout = .25)(char_embed_layer)
 	
 
-def train_and_test_model(model, Xs, ys, test_Xs, test_ys, nb_cycles = 5, epochs_per_display = 10):
-	from sklearn.metrics import classification_report, accuracy_score
-	completed_epochs = 0
-	for i in range(nb_cycles):
-		print(i)
-		for _ in tqdm(range(epochs_per_display)):
-			completed_epochs += 1
-			model.fit(Xs, ys, batch_size = 128, epochs = 1, verbose = 0)
-		print('scoring....')
-		y_hat = np.argmax(model.predict(test_Xs, verbose = 0), axis=1)
-		y_hat_train = np.argmax(model.predict(Xs, verbose = 0), axis=1)
-		print('*' * 40)
-		print('\n', classification_report(np.argmax(test_ys, axis=1), y_hat, target_names = labels))
-		print('test acc:\t', accuracy_score(np.argmax(test_ys, axis=1), y_hat))
-		print('*' * 20)
-		print('train acc:\t', accuracy_score(np.argmax(ys, axis=1), y_hat_train))
-		print('*' * 80)
+	#  now the embedding branch.....
+	embed_input = Input((embed_len,))
+	embed_hidden_layer = Dense(128, activation = 'relu')(embed_input)
+	embed_dropout = Dropout(.25)(embed_hidden_layer)
 
+	concat_outputs = Concatenate(axis = -1)([char_rnn, embed_dropout])
+	concat_hidden_layer = Dense(64)(concat_outputs)
+	concat_dropout = Dropout(.25)(concat_hidden_layer)
+	final_output = Dense(nb_labels, activation = 'softmax')(concat_dropout)
+
+	# when we feed this model, we feed it with a list of inputs, e.g. [X_chars, X_embeddings]
+	model = Model([char_input, embed_input], final_output)
+	model.compile(loss = 'categorical_crossentropy',
+		optimizer='rmsprop')
+	return model
 
 if __name__ == '__main__':
 	from get_relevant_vecs import load_w2v
 	nouns = load_ceg_nouns()
 	w2v = load_w2v()
-
-	#(self.X['tr'], self.y['tr']), (self.X['test'], self.y['test']), (self.c2i, self.l2i) = prep_data(d, w2v)
-	d = CEG_noun_data(nouns, w2v)
-	labels = sorted(d.l2i, key = lambda x : x[1])
+	d = CEG_nouns(nouns, w2v)
 	
-	model = build_phono_model(d.X['train'].shape[1], len(d.c2i), len(d.l2i))
-	train_and_test_model(model, d.X['train'], d.y['train'], d.X['test'], d.y['test'])
-	
-	model = build_embed_model(300, len(d.l2i))
-	train_and_test_model(model, d.X['train_vecs'], d.y['train'], d.X['test_vecs'], d.y['test'])
 
-	sys.exit()
-	from sklearn.metrics import classification_report, accuracy_score
-	completed_epochs = 0
-	for i in range(15):
-		print(i)
-		for _ in tqdm(range(5)):
-			completed_epochs += 1
-			model.fit(d.X['train'], d.y['train'], batch_size = 128, epochs = 1, verbose = 0)
-		print('scoring....')
-		y_hat = np.argmax(model.predict(d.X['test'], verbose = 0), axis=1)
-		y_hat_train = np.argmax(model.predict(d.X['train'], verbose = 0), axis=1)
-		print('*' * 40)
-		print('\n', classification_report(np.argmax(d.y['test'], axis=1), y_hat, target_names = labels))
-		print('test acc:\t', accuracy_score(np.argmax(d.y['test'], axis=1), y_hat))
-		print('*' * 20)
-		print('train acc:\t', accuracy_score(np.argmax(d.y['train'], axis=1), y_hat_train))
-		print('*' * 80)
-		
+	#model = build_phono_model(d.X['train'].shape[1], len(d.c2i), len(d.l2i))
+	#train_and_test_model(model, d.X['train'], d.y['train'], d.X['test'], d.y['test'])
+	
+	#model = build_embed_model(300, len(d.l2i))
+	#train_and_test_model(model, d.X['train_vecs'], d.y['train'], d.X['test_vecs'], d.y['test'])
+
+	model = build_ensemble_model(300, d.X['train'].shape[1], len(d.c2i), len(d.l2i))
+	train_and_test_model(model, 
+		[d.X['train'], d.X['train_vecs']], d.y['train'],
+		[d.X['test'], d.X['test_vecs']], d.y['test']) 
