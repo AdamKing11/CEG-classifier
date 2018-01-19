@@ -36,7 +36,12 @@ def prep_data(d, w2v = None, test_split = .8, embed_len = 300):
 	chars = set()
 	labels = set()
 	maxlen = 0
-	for word, label in d.copy().items():	
+	for word, label in d.copy().items():
+		###
+		#if word not in w2v:
+		#	del d[word]
+		#	continue	
+		###
 		if len(word) > maxlen: maxlen = len(word)
 		for c in word:
 			chars.add(c)
@@ -99,12 +104,12 @@ def prep_data(d, w2v = None, test_split = .8, embed_len = 300):
 def build_phono_model(wordlen, nb_chars, nb_labels):
 	from keras.models import Sequential, Model
 	from keras.layers import Dense, Input, Masking, Dropout
-	from keras.layers import LSTM, Embedding
+	from keras.layers import LSTM, Embedding, Bidirectional
 	
 	char_input = Input((wordlen,))
 	masking_layer = Masking(mask_value = 0.)(char_input)
 	char_embed_layer = Embedding(nb_chars, 32)(char_input)
-	char_rnn = LSTM(64, dropout = .2)(char_embed_layer)
+	char_rnn = Bidirectional(LSTM(64, dropout = .5))(char_embed_layer)
 	final_output = Dense(nb_labels, activation = 'softmax')(char_rnn)
 	model = Model(char_input, final_output)
 
@@ -120,7 +125,7 @@ def build_embedding_model(embded_len, nb_labels):
 	
 	embed_input = Input((embded_len,))
 	embed_hidden_layer = Dense(128, activation = 'relu')(embed_input)
-	embed_dropout = Dropout(.2)(embed_hidden_layer)
+	embed_dropout = Dropout(.5)(embed_hidden_layer)
 	final_output = Dense(nb_labels, activation = 'softmax')(embed_dropout)
 	
 	model = Model(embed_input, final_output)
@@ -137,16 +142,17 @@ def build_ensemble_model(wordlen, embed_len, nb_chars, nb_labels):
 	char_input = Input((wordlen,))
 	masking_layer = Masking(mask_value = 0.)(char_input)
 	char_embed_layer = Embedding(nb_chars, 32)(char_input)
-	char_rnn = LSTM(64, dropout = .2)(char_embed_layer)
+	char_rnn = LSTM(64, dropout = .5)(char_embed_layer)
 
 	# embedding dense
 	embed_input = Input((embed_len,))
 	embed_hidden_layer = Dense(128, activation = 'relu')(embed_input)
-	embed_dropout = Dropout(.2)(embed_hidden_layer)
+	embed_dropout = Dropout(.5)(embed_hidden_layer)
 
 	# concat the 2 different models
 	concat_outputs = Concatenate(axis = -1)([char_rnn, embed_hidden_layer])
-	final_output = Dense(nb_labels, activation = 'softmax')(concat_outputs)
+	concat_hidden_layer = Dense(64)(concat_outputs)
+	final_output = Dense(nb_labels, activation = 'softmax')(concat_hidden_layer)
 
 
 	model = Model([char_input, embed_input], final_output)
@@ -175,9 +181,9 @@ if __name__ == '__main__':
 		for i in range(5):
 			print(i)
 			for _ in tqdm(range(30)):
-				model.fit([X_tr, X_vecs_tr], y_tr, batch_size = 256, epochs = 1, verbose = 0)
+				model.fit([X_tr, X_vecs_tr], y_tr, batch_size = 128, epochs = 1, verbose = 0)
 			y_hat = np.argmax(model.predict([X_test, X_vecs_test], verbose = 1), axis=1)
-			print(classification_report(np.argmax(y_test, axis=1), y_hat, target_names = labels))
+			print('\n', classification_report(np.argmax(y_test, axis=1), y_hat, target_names = labels))
 			print(accuracy_score(np.argmax(y_test, axis=1), y_hat))
 			print('*' * 80)
 	elif False:
@@ -186,24 +192,26 @@ if __name__ == '__main__':
 		for i in range(3):
 			print(i)
 			for _ in tqdm(range(10)):
-				model.fit(X_vecs_tr, y_tr, batch_size = 256, epochs = 1, verbose = 0)
+				model.fit(X_vecs_tr, y_tr, batch_size = 128, epochs = 1, verbose = 0)
 			y_hat = np.argmax(model.predict(X_vecs_test, verbose = 1), axis=1)
 	
-			print(classification_report(np.argmax(y_test, axis=1), y_hat, target_names = labels))
+			print('\n', classification_report(np.argmax(y_test, axis=1), y_hat, target_names = labels))
 			print(accuracy_score(np.argmax(y_test, axis=1), y_hat))
 			print('*' * 80)
 	elif True:
 		# train phono model
 		model = build_phono_model(X_tr.shape[1], len(c2i), len(l2i))
 
-		for i in range(5):
+		for i in range(20):
 			print(i)
 			for _ in tqdm(range(20)):
 				model.fit(X_tr, y_tr, batch_size = 128, epochs = 1, verbose = 0)
 			y_hat = np.argmax(model.predict(X_test, verbose = 1), axis=1)
-	
-			print(classification_report(np.argmax(y_test, axis=1), y_hat, target_names = labels))
+			y_hat_train = np.argmax(model.predict(X_tr, verbose = 1), axis=1)
+			print('\n', classification_report(np.argmax(y_test, axis=1), y_hat, target_names = labels))
 			print(accuracy_score(np.argmax(y_test, axis=1), y_hat))
+			print('train acc:')
+			print(accuracy_score(np.argmax(y_train, axis=1), y_hat_train))
 			print('*' * 80)
 	
 	#print(np.argmax(y_hat[:10], axis=1))
