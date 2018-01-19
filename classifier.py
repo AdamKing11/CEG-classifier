@@ -5,9 +5,7 @@ import math, random
 from pprint import pprint
 from tqdm import tqdm
 
-
 rand_seed = 1234
-
 
 def load_ceg_nouns(f = 'LemmaCountsAnalysis.txt'):
 
@@ -28,24 +26,24 @@ def load_ceg_nouns(f = 'LemmaCountsAnalysis.txt'):
 			
 	return d
 
-def train_and_test_model(model, Xs, ys, test_Xs, test_ys, labels = ('nf', 'nm'), nb_cycles = 5, epochs_per_display = 10):
+def train_and_test_model(model, Xs, ys, test_Xs, test_ys, labels = ('nf', 'nm'), nb_cycles = 15, epochs_per_display = 10):
 	from sklearn.metrics import classification_report, accuracy_score
 	completed_epochs = 0
 	for i in range(nb_cycles):
-		print(i)
+		print(i * epochs_per_display)
 		for _ in tqdm(range(epochs_per_display)):
 			completed_epochs += 1
 			model.fit(Xs, ys, batch_size = 128, epochs = 1, verbose = 0)
+		
 		print('scoring....')
 		y_hat = np.argmax(model.predict(test_Xs, verbose = 0), axis=1)
 		y_hat_train = np.argmax(model.predict(Xs, verbose = 0), axis=1)
 		
-		print(y_hat.shape, y_hat_train.shape)
-		print('*' * 40)
-		
-		print('\n', classification_report(np.argmax(test_ys, axis=1), y_hat, target_names = labels))
-		print('test acc:\t', accuracy_score(np.argmax(test_ys, axis=1), y_hat))
 		print('*' * 20)
+		print('\n', classification_report(np.argmax(test_ys, axis=1), y_hat, target_names = labels))
+		print('*' * 40)
+		print('test acc:\t', accuracy_score(np.argmax(test_ys, axis=1), y_hat))
+		print('*' * 60)
 		print('train acc:\t', accuracy_score(np.argmax(ys, axis=1), y_hat_train))
 		print('*' * 80)
 
@@ -118,8 +116,8 @@ def build_phono_model(word_len, nb_chars, nb_labels):
 	char_input = Input((word_len,))
 	masking_layer = Masking(mask_value = 0.)(char_input)
 	char_embed_layer = Embedding(nb_chars, 32)(masking_layer)
-	#char_rnn = Bidirectional(LSTM(64, dropout = .5))(char_embed_layer)
-	char_rnn = LSTM(64, dropout = .25)(char_embed_layer)
+	char_rnn = Bidirectional(LSTM(64, dropout = .25))(char_embed_layer)
+	#char_rnn = LSTM(64, dropout = .25)(char_embed_layer)
 	final_output = Dense(nb_labels, activation = 'softmax')(char_rnn)
 	model = Model(char_input, final_output)
 
@@ -178,14 +176,16 @@ if __name__ == '__main__':
 	w2v = load_w2v()
 	d = CEG_nouns(nouns, w2v)
 	
-
-	#model = build_phono_model(d.X['train'].shape[1], len(d.c2i), len(d.l2i))
-	#train_and_test_model(model, d.X['train'], d.y['train'], d.X['test'], d.y['test'])
+	# phonological model
+	model = build_phono_model(d.X['train'].shape[1], len(d.c2i), len(d.l2i))
+	train_and_test_model(model, d.X['train'], d.y['train'], d.X['test'], d.y['test'])
 	
+	# embedding model
 	#model = build_embed_model(300, len(d.l2i))
 	#train_and_test_model(model, d.X['train_vecs'], d.y['train'], d.X['test_vecs'], d.y['test'])
 
-	model = build_ensemble_model(300, d.X['train'].shape[1], len(d.c2i), len(d.l2i))
-	train_and_test_model(model, 
-		[d.X['train'], d.X['train_vecs']], d.y['train'],
-		[d.X['test'], d.X['test_vecs']], d.y['test']) 
+	# ensemble model
+	#model = build_ensemble_model(300, d.X['train'].shape[1], len(d.c2i), len(d.l2i))
+	#train_and_test_model(model, 
+	#	[d.X['train'], d.X['train_vecs']], d.y['train'],
+	#	[d.X['test'], d.X['test_vecs']], d.y['test']) 
