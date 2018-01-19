@@ -159,7 +159,8 @@ if __name__ == '__main__':
 	model = build_phono_model(d.X['train'].shape[1], len(d.c2i), len(d.l2i))
 	train_and_test_model(model, d.X['train'], d.y['train'], d.X['test'], d.y['test'])
 	
-
+	model = build_embed_model(300, len(d.l2i))
+	train_and_test_model(model, d.X['train_vecs'], d.y['train'], d.X['test_vecs'], d.y['test'])
 
 	sys.exit()
 	from sklearn.metrics import classification_report, accuracy_score
